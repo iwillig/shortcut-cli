@@ -1,0 +1,92 @@
+{:deps {medley/medley
+        {:mvn/version "1.3.0"}
+        io.github.paintparty/bling
+        {:mvn/version "0.6.0"}}
+
+ :paths ["src" "test"]
+
+ :tasks
+ {:requires ([babashka.fs :as fs]
+             [bling.core :as bling]
+             [babashka.process :as p])
+
+  clean
+  {:doc "Cleans the temp build files"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Running clean task"]))
+
+           (fs/delete-tree "target")
+           (fs/delete-if-exists "test-db.db")
+           (fs/delete-if-exists "junit.xml")
+           (fs/delete-if-exists "docs.html"))}
+
+  test
+  {:doc "Runs the projects with kocha"
+   :task (do
+           (bling/callout {:type :info}
+                          (bling/bling [:bold "Running test task"]))
+
+           (time
+            (clojure "-M:jvm-base:dev:test")))}
+
+  lint
+  {:doc "Lints the code base with clj-kondo"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Running lint task"]))
+           (time
+            (clojure "-M:lint -m clj-kondo.main --lint dev src test")))}
+
+  main {:doc "Run the main command line inteface"
+        :task (do
+                (apply clojure (into ["-M:main"] *command-line-args*)))}
+
+  compile {:doc "Compile Main Clojure namespace"
+           :task (clojure "-M -e \"(compile 'shortcut-cli.main)\"")}
+
+  build-uberjar {:doc "Build UberJar Jar"
+                 :task (clojure "-M:jvm-base:uberdeps --main-class shortcut-cli.main")}
+
+  build-gvm {:doc "Build GraalVM native image"
+             :task (shell "native-image --no-fallback --initialize-at-build-time -jar target/shortcut-cli.jar")}
+
+  build-cli {:doc "Rebuild Command Line Tool"
+             :task (do (run 'clean)
+                       (run 'compile)
+                       (run 'build-uberjar)
+                       (run 'build-gvm))}
+
+  outdated
+  {:doc "Run command to detect outdate version of our deps"
+   :task (clojure "-M:dev:outdated -m depot.outdated.main")}
+
+  nrepl
+  {:doc "Run a nRepl"
+   :task
+   (do
+     (bling/callout
+      {:type :info}
+      (bling/bling [:bold "Running nRepl"]))
+     (clojure "-M:jvm-base:dev:nrepl"))}
+
+  fmt
+  {:doc "Fix format clojure code"
+   :task
+   (do
+     (clojure "-M:dev:format -m cljstyle.main fix scripts src dev"))}
+
+  fmt-check
+  {:doc "Check format clojure code"
+   :task
+   (do
+     (clojure "-M:dev:format -m cljstyle.main check scripts src dev"))}
+
+  ci
+  {:doc "Runs linting and tests for the CI"
+   :task (do (run 'clean)
+             #_(run 'fmt-check)
+             #_(run 'lint)
+             (run 'test))}}}

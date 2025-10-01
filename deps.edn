@@ -1,0 +1,72 @@
+{:deps
+ {org.clojure/clojure               {:mvn/version "1.12.3"}
+  metosin/malli                     {:mvn/version "0.18.0"}
+  cli-matic/cli-matic               {:mvn/version "0.5.4"}
+  metosin/jsonista                  {:mvn/version "0.3.12"}
+  clj-commons/clj-yaml              {:mvn/version "1.0.29"}
+  fipp/fipp                         {:mvn/version "0.6.29"}
+  io.github.paintparty/bling        {:mvn/version "0.8.8"}
+  io.github.lispyclouds/bblgum      {:git/sha "df647fb50f32e05b26e46e58d7249b4798e469e6"}
+  org.slf4j/slf4j-api               {:mvn/version "2.0.17"}
+  mvxcvi/puget                      {:mvn/version "1.3.4"}
+  org.clj-commons/pretty            {:mvn/version "3.6.5"}
+  juji/editscript                   {:mvn/version "0.6.6"}
+  funcool/cats                      {:mvn/version "2.4.3-beta.2"}
+  org.slf4j/slf4j-simple            {:mvn/version "2.0.17"}}
+
+ :paths ["src"
+         "dev"
+         "classes"
+         "resources"]
+
+ :aliases {:dev {:extra-deps
+                 {vvvvalvalval/scope-capture {:mvn/version "0.3.3"}
+                  org.clojure/tools.nrepl    {:mvn/version "0.2.11"}
+                  nubank/matcher-combinators {:mvn/version "3.9.1"}
+                  io.github.tonsky/clj-reload   {:mvn/version "0.9.8"}
+                  org.clojure/test.check        {:mvn/version "1.1.1"}
+                  com.gfredericks/test.chuck    {:mvn/version "0.2.13"}
+                  lambdaisland/kaocha           {:mvn/version "1.91.1392"}
+                  lambdaisland/kaocha-cloverage {:mvn/version "1.1.89"}
+                  lambdaisland/kaocha-junit-xml {:mvn/version "1.17.101"}}
+                 :extra-paths ["test"]}
+
+           :jvm-base
+           {:jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                       "--enable-native-access=ALL-UNNAMED"]}
+
+           :test {:extra-deps {lambdaisland/kaocha           {:mvn/version "1.91.1392"}
+                               lambdaisland/kaocha-cloverage {:mvn/version "1.1.89"}
+                               lambdaisland/kaocha-junit-xml {:mvn/version "1.17.101"}}
+
+                  :main-opts ["-m" "kaocha.runner"]}
+
+           :nrepl
+           {:extra-deps
+            {nrepl/nrepl       {:mvn/version "1.3.0"}
+             cider/cider-nrepl {:mvn/version "0.56.0"}}
+            :jvm-opts  ["-Djdk.attach.allowAttachSelf"]
+            :main-opts ["-m" "nrepl.cmdline"
+                        "--middleware" "[cider.nrepl/cider-middleware]"
+                        "--port" "7881"]}
+
+           :main
+           {:main-opts ["-m" "shortcut-cli.main"]}
+
+           :lint
+           {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2022.09.08"}}}
+
+           :format {:extra-deps
+                    {mvxcvi/cljstyle {:mvn/version "0.16.630"}}}
+
+           :codox {:extra-deps {codox/codox {:mvn/version "0.10.8"}}
+                   :metadata   {:doc/format :markdown}
+                   :exec-fn    codox.main/generate-docs
+                   :exec-args  {:source-paths ["src"]}}
+
+           :uberdeps {:replace-deps  {uberdeps/uberdeps {:mvn/version "1.4.0"}}
+                      :replace-paths []
+                      :main-opts     ["-m" "uberdeps.uberjar"]}
+
+           :outdated
+           {:extra-deps {olical/depot {:mvn/version "1.8.4"}}}}}
