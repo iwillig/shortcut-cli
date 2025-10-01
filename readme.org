@@ -1,0 +1,7 @@
+* Shortcut CLI
+
+This is a command line tool for interacting with v3 of the REST API.
+
+** Install
+
+** Development

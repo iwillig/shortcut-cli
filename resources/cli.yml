@@ -1,0 +1,7 @@
+---
+command: shortcut-cli
+description: A command line tool for the Shortcut REST API
+version: 0.0.1
+subcommands:
+  - command: story
+    description: Manage shortcut stories
