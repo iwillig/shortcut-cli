@@ -7,7 +7,7 @@
     "shortcut cli builder": {
       "mode": "primary",
       "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./shortcut_cli_builder.md}",
+      "prompt": "{file:./shortcut_cli_builder.compressed.md}",
       "tools": {
         "write": true,
         "edit": true,
