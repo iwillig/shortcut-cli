@@ -1,7 +1,438 @@
 * Shortcut CLI
 
-This is a command line tool for interacting with v3 of the REST API.
+A command-line interface for interacting with the [[https://shortcut.com][Shortcut]] (formerly Clubhouse) REST API v3.
 
-** Install
+** Features
+
+- 🚀 *OpenAPI-Driven*: Automatically generated from Shortcut's OpenAPI specification
+- 🔧 *Full CRUD Support*: Create, read, update, and delete Stories, Epics, Iterations, and more
+- 🎯 *Generic Invoke*: Call any API endpoint directly with operation-id and JSON parameters
+- 📚 *Built-in Documentation*: Explore API endpoints and schemas without leaving the terminal
+- 🎨 *Pretty Output*: Colorful, formatted output for better readability
+- ⚡ *High Performance*: Async HTTP with http-kit
+
+** Installation
+
+*** Prerequisites
+
+- Clojure 1.12+
+- Java 11+
+- Babashka (for build tasks)
+
+*** Build from Source
+
+#+begin_src bash
+# Clone the repository
+git clone https://github.com/your-username/shortcut-cli.git
+cd shortcut-cli
+
+# Build the uberjar
+bb build-jar
+
+# Run the CLI
+java -jar target/shortcut-cli.jar --help
+#+end_src
+
+** Configuration
+
+Set your Shortcut API token as an environment variable:
+
+#+begin_src bash
+export SHORTCUT_TOKEN="your-api-token-here"
+#+end_src
+
+You can get your API token from [[https://app.shortcut.com/settings/account/api-tokens][Shortcut Settings > API Tokens]].
+
+*** Logging
+
+The CLI uses [[https://github.com/BrunoBonacci/mulog][μ/log]] for structured event logging. To enable logging:
+
+#+begin_src bash
+export MULOG_ENABLED=true
+#+end_src
+
+This will output structured JSON logs to the console showing API requests, errors, and more. See [[file:LOGGING.md][LOGGING.md]] for detailed configuration options including file output, Elasticsearch, CloudWatch, and Kafka publishers.
+
+** Usage
+
+*** General Command Structure
+
+#+begin_src bash
+shortcut-cli [command] [subcommand] [options]
+#+end_src
+
+*** Documentation Commands
+
+**** List All API Endpoints
+
+#+begin_src bash
+shortcut-cli doc endpoint
+#+end_src
+
+Shows a table of all available API operations with their URLs, methods, and operation IDs.
+
+**** View Specific Endpoint Details
+
+#+begin_src bash
+shortcut-cli doc endpoint getStory
+#+end_src
+
+Shows detailed information about a specific API operation.
+
+**** List All API Schemas
+
+#+begin_src bash
+shortcut-cli doc schema
+#+end_src
+
+Shows all available data schemas in the API.
+
+**** View Specific Schema
+
+#+begin_src bash
+shortcut-cli doc schema Story
+#+end_src
+
+Shows the structure and fields of a specific schema.
+
+*** Generic API Invocation
+
+Call any API endpoint directly:
+
+#+begin_src bash
+shortcut-cli invoke --operation getStory --params '{"story-public-id": 12345}'
+#+end_src
+
+Short form:
+
+#+begin_src bash
+shortcut-cli invoke -o getCurrentMemberInfo -p '{}'
+#+end_src
+
+*** Story Management
+
+**** Create a Story
+
+#+begin_src bash
+shortcut-cli story add \
+  --name "Implement user authentication" \
+  --description "Add OAuth2 support" \
+  --story-type feature \
+  --project-id 123 \
+  --epic-id 456 \
+  --estimate 5
+#+end_src
+
+**** View a Story
+
+#+begin_src bash
+shortcut-cli story view 12345
+#+end_src
+
+**** List All Stories
+
+#+begin_src bash
+shortcut-cli story list
+#+end_src
+
+**** Delete a Story
+
+#+begin_src bash
+shortcut-cli story delete 12345
+#+end_src
+
+*** Epic Management
+
+**** Create an Epic
+
+#+begin_src bash
+shortcut-cli epic create \
+  --name "Q4 Authentication Epic" \
+  --description "Complete authentication overhaul" \
+  --state "in progress" \
+  --milestone-id 789
+#+end_src
+
+**** Update an Epic
+
+#+begin_src bash
+shortcut-cli epic update \
+  --id 456 \
+  --name "Updated Epic Name" \
+  --state "done"
+#+end_src
+
+**** View an Epic
+
+#+begin_src bash
+shortcut-cli epic view 456
+#+end_src
+
+**** List All Epics
+
+#+begin_src bash
+shortcut-cli epic list
+#+end_src
+
+**** Delete an Epic
+
+#+begin_src bash
+shortcut-cli epic delete 456
+#+end_src
+
+**** List Stories in an Epic
+
+#+begin_src bash
+shortcut-cli epic stories 456
+#+end_src
+
+*** Iteration Management
+
+**** List All Iterations
+
+#+begin_src bash
+shortcut-cli iteration list
+#+end_src
+
+**** View an Iteration
+
+#+begin_src bash
+shortcut-cli iteration view 789
+#+end_src
+
+**** List Stories in an Iteration
+
+#+begin_src bash
+shortcut-cli iteration stories 789
+#+end_src
+
+**** Delete an Iteration
+
+#+begin_src bash
+shortcut-cli iteration delete 789
+#+end_src
+
+*** Project Management
+
+**** List All Projects
+
+#+begin_src bash
+shortcut-cli project list
+#+end_src
+
+**** View a Project
+
+#+begin_src bash
+shortcut-cli project view 123
+#+end_src
+
+**** List Stories in a Project
+
+#+begin_src bash
+shortcut-cli project stories 123
+#+end_src
+
+**** Delete a Project
+
+#+begin_src bash
+shortcut-cli project delete 123
+#+end_src
+
+*** Label Management
+
+**** List All Labels
+
+#+begin_src bash
+shortcut-cli label list
+#+end_src
+
+**** View a Label
+
+#+begin_src bash
+shortcut-cli label view 999
+#+end_src
+
+**** List Stories with a Label
+
+#+begin_src bash
+shortcut-cli label stories 999
+#+end_src
+
+**** List Epics with a Label
+
+#+begin_src bash
+shortcut-cli label epics 999
+#+end_src
+
+*** Member Management
+
+**** List All Members
+
+#+begin_src bash
+shortcut-cli member list
+#+end_src
+
+**** View a Member
+
+#+begin_src bash
+shortcut-cli member view "uuid-here"
+#+end_src
+
+**** Get Current Authenticated Member
+
+#+begin_src bash
+shortcut-cli member me
+#+end_src
+
+*** Workflow Management
+
+**** List All Workflows
+
+#+begin_src bash
+shortcut-cli workflow list
+#+end_src
+
+**** View a Workflow
+
+#+begin_src bash
+shortcut-cli workflow view 111
+#+end_src
+
+*** Milestone Management
+
+**** List All Milestones
+
+#+begin_src bash
+shortcut-cli milestone list
+#+end_src
+
+**** View a Milestone
+
+#+begin_src bash
+shortcut-cli milestone view 222
+#+end_src
+
+**** List Epics in a Milestone
+
+#+begin_src bash
+shortcut-cli milestone epics 222
+#+end_src
 
 ** Development
+
+*** Running Tests
+
+#+begin_src bash
+bb test
+#+end_src
+
+*** Linting
+
+#+begin_src bash
+bb lint
+#+end_src
+
+### Code Formatting
+
+#+begin_src bash
+# Check formatting
+bb fmt-check
+
+# Auto-format code
+bb fmt
+#+end_src
+
+*** Running in Development
+
+#+begin_src bash
+# Start an nREPL server
+bb nrepl
+
+# Run the CLI directly
+bb main --help
+bb main story list
+#+end_src
+
+*** Building
+
+#+begin_src bash
+# Clean build artifacts
+bb clean
+
+# Build uberjar
+bb build-jar
+
+# Full CI pipeline (clean, lint, test)
+bb ci
+#+end_src
+
+** Project Structure
+
+#+begin_src
+shortcut-cli/
+├── src/
+│   └── shortcut_cli/
+│       └── main.clj          # Main CLI implementation
+├── resources/
+│   ├── cli.yml              # CLI configuration
+│   └── shortcut.openapi.json # Shortcut OpenAPI spec
+├── test/                    # Test files
+├── deps.edn                # Dependencies
+├── bb.edn                  # Babashka tasks
+└── readme.org              # This file
+#+end_src
+
+** Architecture
+
+The CLI is built using:
+
+- *cli-matic*: Declarative CLI framework
+- *http-kit*: Async HTTP client
+- *jsonista*: Fast JSON parsing
+- *clj-yaml*: YAML parsing for OpenAPI spec
+- *puget*: Pretty printing
+- *bling*: Terminal colors and formatting
+
+The entire CLI is dynamically generated from Shortcut's OpenAPI specification, ensuring it stays up-to-date with the API.
+
+** Error Handling
+
+The CLI provides helpful error messages:
+
+- *401 Unauthorized*: Check your SHORTCUT_TOKEN
+- *404 Not Found*: Resource doesn't exist
+- *422 Unprocessable Entity*: Invalid parameters
+- *429 Rate Limit Exceeded*: Too many requests
+
+All errors include the full API response for debugging.
+
+** Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting: =bb ci=
+5. Submit a pull request
+
+** Resources
+
+- [[https://shortcut.com][Shortcut Homepage]]
+- [[https://developer.shortcut.com/api/rest/v3][Shortcut API Documentation]]
+- [[https://developer.shortcut.com/api/rest/v3/shortcut.openapi.json][Shortcut OpenAPI Specification]]
+
+** License
+
+[Your chosen license here]
+
+** Changelog
+
+*** v0.0.1 (2024-11-11)
+
+- Initial release
+- OpenAPI-driven command generation
+- Full CRUD support for Stories, Epics, Iterations, Projects
+- Generic API invocation
+- Built-in API documentation explorer
+- Pretty formatted output

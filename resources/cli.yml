@@ -5,3 +5,7 @@ version: 0.0.1
 subcommands:
   - command: story
     description: Manage shortcut stories
+    subcommands:
+      - command: add
+        description: Add a new Shortcut Story
+        endpoint: create-story

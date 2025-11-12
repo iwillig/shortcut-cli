@@ -1,0 +1,45 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "tokyonight",
+  "model": "anthropic/claude-sonnet-4-5",
+  "autoupdate": true,
+  "agent": {
+    "shortcut cli builder": {
+      "mode": "primary",
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./shortcut_cli_builder.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    }
+  },
+  "mcp": {
+    "clojure-mcp": {
+      "type": "local",
+      "enabled": true,
+      "command": ["clojure", "-X:mcp", ":port", "7881"]
+    }
+  },
+  "lsp": {
+    "clojure-lsp": {
+      "command": ["/opt/homebrew/bin/clojure-lsp"],
+      "extensions": [".clj", ".cljs", ".cljc", ".edn", ".bb"],
+      "env": {
+        "CLOJURE_LSP_LOG_LEVEL": "info"
+      },
+      "initialization": {
+        "initializationOptions": {
+          "project-root-uri-as-project-root?": true,
+          "text-document-sync-kind": 2
+        }
+      }
+    }
+  }
+}

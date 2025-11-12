@@ -47,16 +47,22 @@
   compile {:doc "Compile Main Clojure namespace"
            :task (clojure "-M -e \"(compile 'shortcut-cli.main)\"")}
 
-  build-uberjar {:doc "Build UberJar Jar"
-                 :task (clojure "-M:jvm-base:uberdeps --main-class shortcut-cli.main")}
+  build-jar {:doc "Build UberJar Jar"
+             :task (clojure "-M:jvm-base:uberdeps --main-class shortcut-cli.main")}
 
   build-gvm {:doc "Build GraalVM native image"
-             :task (shell "native-image --no-fallback --initialize-at-build-time -jar target/shortcut-cli.jar")}
+             :task
+             (apply shell ["native-image"
+                           "--no-fallback"
+                           "--initialize-at-build-time"
+                           "--enable-url-protocols=http,https"
+                           "--report-unsupported-elements-at-runtime"
+                           "-jar" "target/shortcut-cli.jar"])}
 
   build-cli {:doc "Rebuild Command Line Tool"
              :task (do (run 'clean)
                        (run 'compile)
-                       (run 'build-uberjar)
+                       (run 'build-jar)
                        (run 'build-gvm))}
 
   outdated
