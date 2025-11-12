@@ -8,7 +8,11 @@
             [puget.printer :as printer]
             [clj-yaml.core :as yaml]
             [cli-matic.core :as cli]
-            [com.brunobonacci.mulog :as μ]))
+            [com.brunobonacci.mulog :as μ]
+            [malli.core :as m]
+            [malli.error :as me]
+            [malli.transform :as mt]
+            [bling.core :as bling]))
 
 ;;(repl/install-pretty-exceptions)
 
@@ -50,6 +54,93 @@
 (defn server-url
   []
   (:url (first (get-in openapi [:servers]))))
+
+(defn openapi-type->malli
+  "Convert OpenAPI schema type to Malli schema"
+  [param-schema]
+  (let [type-str (:type param-schema)
+        format-str (:format param-schema)]
+    (case type-str
+      "string" (cond
+                 (= format-str "uuid") :uuid
+                 (:enum param-schema) (into [:enum] (:enum param-schema))
+                 (:pattern param-schema) [:re (re-pattern (:pattern param-schema))]
+                 :else :string)
+      "integer" [:int]
+      "number" [:double]
+      "boolean" [:boolean]
+      "array" (if-let [items (:items param-schema)]
+                [:sequential (openapi-type->malli items)]
+                [:sequential :any])
+      "object" [:map]
+      :any)))
+
+(defn build-param-schema
+  "Build Malli schema for a single parameter"
+  [param]
+  (let [param-name (keyword (:name param))
+        required? (:required param false)
+        schema (:schema param)
+        base-schema (if schema
+                      (openapi-type->malli schema)
+                      :any)
+        description (:description param)]
+    (if required?
+      [param-name
+       (if description
+         {:description description}
+         {})
+       base-schema]
+      [param-name
+       {:optional true
+        :description (or description "")}
+       base-schema])))
+
+(defn build-malli-schema
+  "Build complete Malli schema for route parameters"
+  [route-info]
+  (let [params (:parameters (:route-info route-info))
+        param-schemas (map build-param-schema params)]
+    (if (seq param-schemas)
+      (into [:map] param-schemas)
+      [:map])))
+
+(defn validate-params
+  "Validate and coerce parameters against route schema.
+   Returns {:valid? true :params coerced-params} on success
+   or {:valid? false :errors humanized-errors} on failure"
+  [route-info params]
+  (let [schema (build-malli-schema route-info)
+        ;; Try to coerce string values to expected types
+        coerced-params (m/decode schema params mt/string-transformer)]
+    (if (m/validate schema coerced-params)
+      {:valid? true
+       :params coerced-params}
+      (let [explanation (m/explain schema coerced-params)
+            errors (me/humanize explanation)]
+        {:valid? false
+         :errors errors
+         :schema schema}))))
+
+(defn print-validation-errors
+  "Print validation errors in a user-friendly format"
+  [route-name errors]
+  (binding [*out* *err*]
+    (println)
+    (bling/callout
+     {:type :error}
+     (bling/bling [:bold "Parameter Validation Failed"]))
+    (println)
+    (println (bling/bling [:bold "Operation:"]) (name route-name))
+    (println)
+    (println (bling/bling [:bold "Errors:"]))
+    (doseq [[field field-errors] errors]
+      (println (str "  " (bling/bling [:yellow (name field)]) ":"))
+      (if (sequential? field-errors)
+        (doseq [error field-errors]
+          (println (str "    - " error)))
+        (println (str "    - " field-errors))))
+    (println)))
 
 (defn build-path-params
   [route-info params]
@@ -187,23 +278,34 @@
            (println "Error: Unknown operation:" route-name))
          (System/exit 1))
 
-       (μ/log ::api-request-start
-              :operation route-name
-              :method (:method route-info)
-              :path (:path route-info))
+       ;; Validate and coerce parameters
+       (let [validation (validate-params route-info params)]
+         (when-not (:valid? validation)
+           (μ/log ::validation-failed
+                  :operation route-name
+                  :errors (:errors validation))
+           (print-validation-errors route-name (:errors validation))
+           (System/exit 1))
 
-       (let [request-info (build-request-info route-info params)
-             result (-> (merge request-info
-                               {:headers (merge (:headers request-info)
-                                                {"Shortcut-Token" token})})
-                        (hk-client/request)
-                        (deref)
-                        (handle-response))]
-         (μ/log ::api-request-complete
-                :operation route-name
-                :status (:status result)
-                :error (:error result))
-         result)))))
+         ;; Use coerced parameters for the request
+         (let [validated-params (:params validation)]
+           (μ/log ::api-request-start
+                  :operation route-name
+                  :method (:method route-info)
+                  :path (:path route-info))
+
+           (let [request-info (build-request-info route-info validated-params)
+                 result (-> (merge request-info
+                                   {:headers (merge (:headers request-info)
+                                                    {"Shortcut-Token" token})})
+                            (hk-client/request)
+                            (deref)
+                            (handle-response))]
+             (μ/log ::api-request-complete
+                    :operation route-name
+                    :status (:status result)
+                    :error (:error result))
+             result)))))))
 
 (defn- print-args
   [& args]
@@ -294,7 +396,7 @@
              :default "{}"}]
      :runs (fn [{:keys [operation params]}]
              (let [parsed-params (try
-                                   (json/read-value params)
+                                   (json/read-value params json/keyword-keys-object-mapper)
                                    (catch Exception e
                                      (binding [*out* *err*]
                                        (println "Error: Invalid JSON parameters:" (.getMessage e)))
